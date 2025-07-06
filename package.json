@@ -1,0 +1,10 @@
+{
+  "name": "audiostream-vercel-deploy",
+  "version": "1.0.0",
+  "description": "Audio Playback Stream - Vercel Deployment",
+  "scripts": {
+    "build": "cd audio-playback-stream && npx expo export --platform web",
+    "install": "cd audio-playback-stream && npm install"
+  },
+  "private": true
+}

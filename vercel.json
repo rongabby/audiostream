@@ -1,0 +1,14 @@
+{
+  "buildCommand": "cd audio-playback-stream && npx expo export --platform web",
+  "outputDirectory": "audio-playback-stream/dist",
+  "framework": null,
+  "functions": {
+    "node": "18.x"
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
