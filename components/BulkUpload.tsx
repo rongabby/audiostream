@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { uploadMultipleAudioFiles, UploadResult } from '../app/lib/uploadService';
+import { uploadMultipleAudioFiles, UploadResult } from '@/app/lib/uploadService';
 
 interface BulkUploadProps {
   onFilesSelect: (files: { url: string; name: string }[]) => void;
