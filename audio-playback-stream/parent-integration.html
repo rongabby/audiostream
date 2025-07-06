@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Website - With Music Player</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+        
+        .navbar {
+            background: #2c3e50;
+            color: white;
+            padding: 1rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+        
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        
+        .nav-links a:hover {
+            color: #3498db;
+        }
+        
+        .main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 20px;
+        }
+        
+        .section {
+            margin-bottom: 3rem;
+        }
+        
+        .section h2 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            font-size: 2rem;
+        }
+        
+        .section p {
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+            line-height: 1.8;
+        }
+        
+        .music-player-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 2rem;
+            margin: 2rem 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .music-player-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .music-player-header h2 {
+            color: #2c3e50;
+            margin-bottom: 0.5rem;
+        }
+        
+        .music-player-header p {
+            color: #666;
+            font-size: 1rem;
+        }
+        
+        .iframe-container {
+            position: relative;
+            width: 100%;
+            height: 800px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #f0f0f0;
+        }
+        
+        .music-player-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+        
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: #666;
+            z-index: 10;
+        }
+        
+        .status-bar {
+            background: #e9ecef;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .footer {
+            background: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 2rem 0;
+            margin-top: 3rem;
+        }
+        
+        @media (max-width: 768px) {
+            .nav-container {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .nav-links {
+                gap: 1rem;
+            }
+            
+            .iframe-container {
+                height: 600px;
+            }
+            
+            .music-player-section {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">Your Website</div>
+            <ul class="nav-links">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#music">Music Player</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+        </div>
+    </nav>
+    
+    <main class="main-content">
+        <section id="home" class="section">
+            <h2>Welcome to Your Website</h2>
+            <p>This is your existing website content. The music player below is embedded as an iframe, allowing you to integrate the React Native web app seamlessly into your existing site.</p>
+            <p>Your visitors can enjoy music while browsing your other content. The player maintains its own state and functionality independently.</p>
+        </section>
+        
+        <section id="music" class="music-player-section">
+            <div class="music-player-header">
+                <h2>🎵 Music Player</h2>
+                <p>Embedded React Native web application</p>
+            </div>
+            
+            <div class="status-bar" id="playerStatus">
+                Status: Loading music player...
+            </div>
+            
+            <div class="iframe-container">
+                <div class="loading-overlay" id="loadingOverlay">
+                    Loading music player...
+                </div>
+                <iframe 
+                    id="musicPlayerIframe"
+                    src="about:blank"
+                    class="music-player-iframe"
+                    title="Music Player"
+                    allow="autoplay; encrypted-media; microphone; camera"
+                    sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-modals"
+                    onload="handleIframeLoad()">
+                    <p>Your browser doesn't support iframes. Please <a href="#">visit the music player directly</a>.</p>
+                </iframe>
+            </div>
+        </section>
+        
+        <section id="about" class="section">
+            <h2>About This Integration</h2>
+            <p>This page demonstrates how to integrate the React Native music player into an existing website using an iframe. The player runs independently while being part of your site's user experience.</p>
+            <p>Key benefits of this approach:</p>
+            <ul style="margin-left: 2rem; margin-top: 1rem;">
+                <li>Easy integration with existing websites</li>
+                <li>Maintains separation of concerns</li>
+                <li>Independent updates and maintenance</li>
+                <li>Responsive design that adapts to your layout</li>
+            </ul>
+        </section>
+    </main>
+    
+    <footer class="footer">
+        <p>&copy; 2024 Your Website. Music Player integrated via iframe.</p>
+    </footer>
+    
+    <script>
+        // Communication with the music player iframe
+        let playerReady = false;
+        
+        function handleIframeLoad() {
+            const overlay = document.getElementById('loadingOverlay');
+            const status = document.getElementById('playerStatus');
+            
+            // Hide loading overlay after a short delay
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                status.textContent = 'Status: Music player loaded successfully';
+            }, 2000);
+        }
+        
+        // Listen for messages from the music player
+        window.addEventListener('message', function(event) {
+            if (event.data && event.data.source === 'music-player') {
+                const status = document.getElementById('playerStatus');
+                
+                switch(event.data.type) {
+                    case 'ready':
+                        playerReady = true;
+                        status.textContent = 'Status: Music player ready';
+                        break;
+                    case 'audioStarted':
+                        status.textContent = 'Status: Playing - ' + (event.data.data?.title || 'Unknown track');
+                        break;
+                    case 'audioPaused':
+                        status.textContent = 'Status: Paused';
+                        break;
+                    case 'audioEnded':
+                        status.textContent = 'Status: Track ended';
+                        break;
+                    case 'resize':
+                        // Handle iframe resize if needed
+                        if (event.data.data?.height) {
+                            const iframe = document.getElementById('musicPlayerIframe');
+                            iframe.style.height = event.data.data.height + 'px';
+                        }
+                        break;
+                }
+            }
+        });
+        
+        // Send commands to the music player (example)
+        function sendToPlayer(type, data) {
+            if (playerReady) {
+                const iframe = document.getElementById('musicPlayerIframe');
+                iframe.contentWindow.postMessage({
+                    source: 'music-player-parent',
+                    type: type,
+                    data: data
+                }, '*');
+            }
+        }
+        
+        // Replace 'about:blank' with your actual music player URL
+        // For demo purposes, keeping it as about:blank
+        document.addEventListener('DOMContentLoaded', function() {
+            const iframe = document.getElementById('musicPlayerIframe');
+            // iframe.src = 'https://your-domain.com/music-player';
+            
+            // For demo, show a message after 3 seconds
+            setTimeout(() => {
+                const overlay = document.getElementById('loadingOverlay');
+                const status = document.getElementById('playerStatus');
+                overlay.innerHTML = '<div style="text-align: center;"><h3>Demo Mode</h3><p>Replace iframe src with your deployed music player URL</p><p>See build-for-iframe.md for instructions</p></div>';
+                status.textContent = 'Status: Replace iframe src with your music player URL';
+            }, 3000);
+        });
+    </script>
+</body>
+</html>

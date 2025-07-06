@@ -1,0 +1,11 @@
+node_modules/
+.expo/
+dist/
+.env.local
+.env
+*.log
+npm-debug.log*
+.nyc_output
+.DS_Store
+.vscode/
+.idea/
