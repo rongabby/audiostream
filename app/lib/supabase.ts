@@ -26,6 +26,27 @@ if (!supabaseUrl || !supabaseKey) {
   console.warn('Please set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY environment variables.');
   
   // Create a mock Supabase client that doesn't break the app
+  const createMockQuery = () => ({
+    select: (columns: string = '*') => createMockQuery(),
+    eq: (column: string, value: any) => createMockQuery(),
+    neq: (column: string, value: any) => createMockQuery(),
+    gt: (column: string, value: any) => createMockQuery(),
+    gte: (column: string, value: any) => createMockQuery(),
+    lt: (column: string, value: any) => createMockQuery(),
+    lte: (column: string, value: any) => createMockQuery(),
+    like: (column: string, pattern: string) => createMockQuery(),
+    ilike: (column: string, pattern: string) => createMockQuery(),
+    in: (column: string, values: any[]) => createMockQuery(),
+    is: (column: string, value: any) => createMockQuery(),
+    single: () => Promise.resolve({ data: null, error: { code: 'PGRST116', message: 'No rows found' } }),
+    maybeSingle: () => Promise.resolve({ data: null, error: null }),
+    then: (resolve: any, reject: any) => Promise.resolve({ data: [], error: null }).then(resolve, reject),
+    insert: (values: any) => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }),
+    update: (values: any) => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }),
+    delete: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }),
+    upsert: (values: any) => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } })
+  });
+
   supabase = {
     auth: {
       signIn: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }),
@@ -33,13 +54,7 @@ if (!supabaseUrl || !supabaseKey) {
       getUser: () => Promise.resolve({ data: { user: null }, error: null }),
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
     },
-    from: () => ({
-      select: () => Promise.resolve({ data: [], error: null }),
-      insert: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }),
-      update: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }),
-      delete: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }),
-      upsert: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } })
-    }),
+    from: (table: string) => createMockQuery(),
     storage: {
       from: () => ({
         upload: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }),
