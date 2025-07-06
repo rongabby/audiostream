@@ -18,14 +18,39 @@ const supabaseKey =
     process.env.NEXT_PUBLIC_SUPABASE_KEY ||
     (typeof window !== 'undefined' && (window as any).SUPABASE_CONFIG?.key);
 
-if (!supabaseUrl) {
-  throw new Error('Supabase URL not found. Please set EXPO_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_URL environment variable');
-}
-if (!supabaseKey) {
-  throw new Error('Supabase key not found. Please set EXPO_PUBLIC_SUPABASE_ANON_KEY or NEXT_PUBLIC_SUPABASE_KEY environment variable');
-}
+// Create a mock client if environment variables are missing (for development/demo)
+let supabase: any;
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+if (!supabaseUrl || !supabaseKey) {
+  console.warn('⚠️ Supabase credentials not configured. Using mock client.');
+  console.warn('Please set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY environment variables.');
+  
+  // Create a mock Supabase client that doesn't break the app
+  supabase = {
+    auth: {
+      signIn: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }),
+      signOut: () => Promise.resolve({ error: null }),
+      getUser: () => Promise.resolve({ data: { user: null }, error: null }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
+    },
+    from: () => ({
+      select: () => Promise.resolve({ data: [], error: null }),
+      insert: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }),
+      update: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }),
+      delete: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }),
+      upsert: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } })
+    }),
+    storage: {
+      from: () => ({
+        upload: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }),
+        remove: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }),
+        getPublicUrl: () => ({ data: { publicUrl: '' } })
+      })
+    }
+  };
+} else {
+  supabase = createClient(supabaseUrl, supabaseKey);
+}
 
 
 export { supabase };

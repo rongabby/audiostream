@@ -1,5 +1,14 @@
 # 🚀 Vercel Deployment - Step by Step for rongabby-7444
 
+## ⚠️ **CRITICAL: Environment Variables Required**
+**The app will show a blank page without these environment variables!**
+
+Set these in Vercel's project settings before deploying:
+```
+EXPO_PUBLIC_SUPABASE_URL = your_supabase_project_url
+EXPO_PUBLIC_SUPABASE_ANON_KEY = your_supabase_anon_key
+```
+
 ## ✅ **Current Status**
 - Repository: `https://github.com/rongabby/audiostream`
 - Username: `rongabby-7444`
@@ -19,7 +28,25 @@
 ### **✅ Project Name: `rongabby-audio-player`**
 Use this unique project name when importing to avoid conflicts.
 
-## **Step 3: Configure Deployment Settings**
+## **Step 3: Set Environment Variables (REQUIRED!)**
+**⚠️ This step is critical - skip this and your app will show a blank page!**
+
+1. 🔧 **In Vercel dashboard**, after importing your project, go to:
+   - **Project Settings** → **Environment Variables**
+2. 📋 **Add these variables**:
+   ```
+   EXPO_PUBLIC_SUPABASE_URL = your_supabase_project_url
+   EXPO_PUBLIC_SUPABASE_ANON_KEY = your_supabase_anon_key
+   ```
+3. ✅ **Save** the environment variables
+
+### Where to get Supabase credentials:
+1. Go to your [Supabase Dashboard](https://supabase.com/dashboard)
+2. Select your project
+3. Go to **Settings** → **API**
+4. Copy the **Project URL** and **anon public** key
+
+## **Step 4: Configure Deployment Settings**
 When importing, set these values:
 
 ### **Project Configuration**
@@ -45,7 +72,7 @@ EXPO_PUBLIC_SUPABASE_URL = your_supabase_project_url
 EXPO_PUBLIC_SUPABASE_ANON_KEY = your_supabase_anon_key
 ```
 
-## **Step 4: Deploy!**
+## **Step 5: Deploy!**
 1. 🚀 **Click "Deploy"**
 2. ⏱️ **Wait 2-3 minutes** for build to complete
 3. 🎉 **Get your live URL**: `https://rongabby-audio-player.vercel.app`
