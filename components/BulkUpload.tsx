@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { uploadMultipleAudioFiles, UploadResult } from '../app/lib/uploadService';
+import { uploadAudioFile, UploadResult } from '@/app/lib/uploadService';
 
 interface BulkUploadProps {
   onFilesSelect: (files: { url: string; name: string }[]) => void;
@@ -31,17 +31,22 @@ const BulkUpload: React.FC<BulkUploadProps> = ({ onFilesSelect }) => {
         const file = audioFiles[i];
         setUploadProgress(`Uploading ${i + 1}/${audioFiles.length} files...`);
         
-        const result = await uploadMultipleAudioFiles([file]);
-        results.push(...result);
+        const result = await uploadAudioFile(file);
+        results.push(result);
       }
 
       // Process results and create file objects
       const processedFiles = results.map((result, index) => ({
-        url: result.url || URL.createObjectURL(audioFiles[index]),
+        url: result.publicUrl || result.url || URL.createObjectURL(audioFiles[index]),
         name: result.fileName || audioFiles[index].name
       }));
 
+      const successfulUploads = results.filter(r => r.success).length;
       const failedUploads = results.filter(r => !r.success).length;
+      
+      if (successfulUploads > 0) {
+        console.log(`${successfulUploads} files successfully uploaded to cloud storage`);
+      }
       if (failedUploads > 0) {
         console.warn(`${failedUploads} files failed to upload and will use local URLs`);
       }

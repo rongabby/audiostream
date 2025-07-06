@@ -1,7 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, ImageBackground, TouchableOpacity } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { Ionicons } from '@expo/vector-icons';
 import AdminPanel from '../components/AdminPanel';
 import VisitorView from '../components/VisitorView';
 import AudioPlayer from '../components/AudioPlayer';
@@ -13,7 +12,6 @@ import DuplicateRemover from '../components/DuplicateRemover';
 import AppendToPlaylist from '../components/AppendToPlaylist';
 import FileEditor from '../components/FileEditor';
 import Notification from '../components/Notification';
-import PlaylistActivator from '../components/PlaylistActivator';
 import { isSupabaseConfigured } from './lib/supabase';
 import { AudioFile, Playlist } from '@/types';
 
@@ -24,8 +22,7 @@ export default function Index() {
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [activePlaylist, setActivePlaylist] = useState<Playlist | null>(null);
   const [editingFile, setEditingFile] = useState<AudioFile | null>(null);
-  const [showUploadSection, setShowUploadSection] = useState(false);
-  const scrollViewRef = useRef<ScrollView>(null);
+  const [isPlaylistLooping, setIsPlaylistLooping] = useState(false);
   
   // Notification state
   const [notification, setNotification] = useState<{
@@ -109,9 +106,21 @@ export default function Index() {
 
   const handleNext = () => {
     if (audioFiles.length > 0) {
+      const isLastTrack = currentIndex === audioFiles.length - 1;
+      
+      if (isLastTrack && !isPlaylistLooping) {
+        // If we're at the last track and playlist looping is off, stop playing
+        showNotification('Reached end of playlist', 'info');
+        return;
+      }
+      
       const nextIndex = (currentIndex + 1) % audioFiles.length;
       setCurrentIndex(nextIndex);
       setCurrentFile(audioFiles[nextIndex]);
+      
+      if (isLastTrack && isPlaylistLooping) {
+        showNotification('Playlist restarting from beginning', 'info');
+      }
     }
   };
 
@@ -194,9 +203,9 @@ export default function Index() {
         setCurrentIndex(newIndex >= 0 ? newIndex : 0);
       }
       
-      showNotification('Playlist order reversed', 'info');
       return reversed;
     });
+    showNotification('Playlist order reversed', 'info');
   };
 
   const handleRemoveDuplicates = (uniqueFiles: AudioFile[]) => {
@@ -212,7 +221,6 @@ export default function Index() {
 
   const handlePlaylistActivated = (playlist: Playlist) => {
     setActivePlaylist(playlist);
-    showNotification(`"${playlist.name}" activated`, 'success');
   };
 
   const handleFilesUpdated = (updatedFiles: AudioFile[]) => {
@@ -224,18 +232,6 @@ export default function Index() {
       const newIndex = updatedFiles.findIndex(f => f.url === currentFile.url);
       setCurrentIndex(newIndex >= 0 ? newIndex : 0);
     }
-  };
-
-  const scrollToUploadSection = () => {
-    setShowUploadSection(true);
-    // Scroll to upload section after state update
-    setTimeout(() => {
-      scrollViewRef.current?.scrollTo({ y: 0, animated: true });
-    }, 100);
-    // Remove highlight after 3 seconds
-    setTimeout(() => {
-      setShowUploadSection(false);
-    }, 3000);
   };
 
   const handleAppendSuccess = () => {
@@ -266,6 +262,14 @@ export default function Index() {
     setEditingFile(null);
   };
 
+  const togglePlaylistLoop = () => {
+    setIsPlaylistLooping(prev => !prev);
+    showNotification(
+      isPlaylistLooping ? 'Playlist loop disabled' : 'Playlist loop enabled - will repeat when reaching the end', 
+      'info'
+    );
+  };
+
   return (
     <ImageBackground 
       source={{ uri: 'https://d64gsuwffb70l.cloudfront.net/6858c6b95dee2fd769bba65c_1751596538904_0c158712.jpg' }}
@@ -283,7 +287,7 @@ export default function Index() {
           onHide={hideNotification}
         />
         
-        <ScrollView style={styles.container} showsVerticalScrollIndicator={false} ref={scrollViewRef}>
+        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
             <Text style={styles.title}>🎵 Music Player</Text>
             <View style={styles.modeToggle}>
@@ -304,36 +308,12 @@ export default function Index() {
 
           {isAdminMode ? (
             <View>
-              {/* Quick Navigation */}
-              <View style={styles.quickNav}>
-                <TouchableOpacity 
-                  style={styles.quickNavButton}
-                  onPress={scrollToUploadSection}
-                >
-                  <Ionicons name="cloud-upload" size={20} color="white" />
-                  <Text style={styles.quickNavText}>Jump to Upload</Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* Playlist Activator */}
-              <PlaylistActivator 
-                onPlaylistActivated={handlePlaylistActivated}
-              />
-
               <AdminPanel 
                 audioFiles={audioFiles} 
                 onPlaylistActivated={handlePlaylistActivated}
                 onFilesUpdated={handleFilesUpdated}
               />
               
-              <View style={styles.adminSection}>
-                <Text style={styles.sectionTitle}>📁 File Upload Center</Text>
-                <View style={[styles.uploadSection, showUploadSection && styles.highlightedSection]}>
-                  <FileUpload onFileSelect={handleFileSelect} />
-                  <BulkUpload onFilesSelect={handleBulkFileSelect} />
-                </View>
-              </View>
-
               <View style={styles.adminSection}>
                 <Text style={styles.sectionTitle}>File Management</Text>
                 
@@ -344,6 +324,10 @@ export default function Index() {
                     title={currentFile.name.replace('.mp3', '')} 
                     onNext={audioFiles.length > 1 ? handleNext : undefined}
                     onPrevious={audioFiles.length > 1 ? handlePrevious : undefined}
+                    isPlaylistLooping={isPlaylistLooping}
+                    onTogglePlaylistLoop={togglePlaylistLoop}
+                    playlistLength={audioFiles.length}
+                    currentIndex={currentIndex}
                   />
                 )}
 
@@ -406,7 +390,11 @@ export default function Index() {
               </View>
             </View>
           ) : (
-            <VisitorView uploadedFiles={audioFiles} />
+            <VisitorView 
+              uploadedFiles={audioFiles} 
+              isPlaylistLooping={isPlaylistLooping}
+              onTogglePlaylistLoop={togglePlaylistLoop}
+            />
           )}
         </ScrollView>
       </View>
@@ -433,45 +421,4 @@ const styles = StyleSheet.create({
   playlistSection: { marginTop: 20 },
   playlistTitle: { color: 'white', fontSize: 18, fontWeight: 'bold', marginBottom: 10 },
   uploadMore: { marginTop: 20, marginBottom: 20 },
-  quickNav: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginBottom: 15,
-    paddingHorizontal: 20,
-  },
-  quickNavButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ff4757',
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    borderRadius: 20,
-    shadowColor: '#ff4757',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  quickNavText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginLeft: 8,
-  },
-  uploadSection: {
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 10,
-    padding: 15,
-    marginTop: 10,
-  },
-  highlightedSection: {
-    backgroundColor: 'rgba(255, 71, 87, 0.1)',
-    borderWidth: 2,
-    borderColor: '#ff4757',
-    shadowColor: '#ff4757',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 5,
-  },
 });

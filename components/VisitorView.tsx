@@ -7,9 +7,11 @@ import { AudioFile, Playlist } from '@/types';
 
 interface VisitorViewProps {
   uploadedFiles?: AudioFile[];
+  isPlaylistLooping?: boolean;
+  onTogglePlaylistLoop?: () => void;
 }
 
-export default function VisitorView({ uploadedFiles = [] }: VisitorViewProps) {
+export default function VisitorView({ uploadedFiles = [], isPlaylistLooping = false, onTogglePlaylistLoop }: VisitorViewProps) {
   console.log('VisitorView rendered with uploadedFiles:', uploadedFiles.length, uploadedFiles);
   
   const [activePlaylist, setActivePlaylist] = useState<Playlist | null>(null);
@@ -17,6 +19,7 @@ export default function VisitorView({ uploadedFiles = [] }: VisitorViewProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [useUploadedFiles, setUseUploadedFiles] = useState(false);
+  const [visitorPlaylistLooping, setVisitorPlaylistLooping] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
@@ -70,6 +73,14 @@ export default function VisitorView({ uploadedFiles = [] }: VisitorViewProps) {
     const files = useUploadedFiles ? uploadedFiles : (activePlaylist?.audio_files || []);
     if (files.length === 0) return;
     
+    const isLastTrack = currentIndex === files.length - 1;
+    const loopSetting = isPlaylistLooping !== undefined ? isPlaylistLooping : visitorPlaylistLooping;
+    
+    if (isLastTrack && !loopSetting) {
+      // If we're at the last track and playlist looping is off, stop
+      return;
+    }
+    
     const nextIndex = (currentIndex + 1) % files.length;
     setCurrentIndex(nextIndex);
     setCurrentFile(files[nextIndex]);
@@ -98,6 +109,10 @@ export default function VisitorView({ uploadedFiles = [] }: VisitorViewProps) {
 
   const scrollToBottom = () => {
     scrollViewRef.current?.scrollToEnd({ animated: true });
+  };
+
+  const toggleVisitorPlaylistLoop = () => {
+    setVisitorPlaylistLooping(prev => !prev);
   };
 
   if (loading) {
@@ -161,6 +176,8 @@ export default function VisitorView({ uploadedFiles = [] }: VisitorViewProps) {
             isVisitorMode={true}
             playlistLength={currentFiles.length}
             currentIndex={currentIndex}
+            isPlaylistLooping={isPlaylistLooping !== undefined ? isPlaylistLooping : visitorPlaylistLooping}
+            onTogglePlaylistLoop={onTogglePlaylistLoop || toggleVisitorPlaylistLoop}
           />
         )}
 

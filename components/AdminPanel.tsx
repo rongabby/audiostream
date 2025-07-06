@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView } from 'react-native';
-import { supabase } from '@/app/lib/supabase';
+import { supabase, isSupabaseConfigured } from '@/app/lib/supabase';
 import ScrollToTopBottom from './ScrollToTopBottom';
 import DuplicateRemover from './DuplicateRemover';
 import CloudFileManager from './CloudFileManager';
@@ -111,6 +111,18 @@ export default function AdminPanel({ audioFiles, onPlaylistActivated, onFilesUpd
       <ScrollView ref={scrollViewRef} style={styles.scrollView}>
         <Text style={styles.title}>🎛️ Admin Panel</Text>
         
+        {/* Cloud Storage Status */}
+        <View style={[styles.statusCard, isSupabaseConfigured() ? styles.statusSuccess : styles.statusWarning]}>
+          <Text style={styles.statusTitle}>
+            {isSupabaseConfigured() ? '☁️ Cloud Storage: Connected' : '⚠️ Cloud Storage: Not Configured'}
+          </Text>
+          <Text style={styles.statusText}>
+            {isSupabaseConfigured() 
+              ? 'Files will be stored in Supabase cloud storage and accessible across sessions.'
+              : 'Files are stored locally as temporary blob URLs. They will be lost when the page refreshes. To enable persistent cloud storage, configure Supabase environment variables.'}
+          </Text>
+        </View>
+        
         <View style={styles.createSection}>
           <Text style={styles.sectionTitle}>Create New Playlist</Text>
           <TextInput
@@ -202,4 +214,29 @@ const styles = StyleSheet.create({
   activateButton: { backgroundColor: '#28a745', paddingHorizontal: 15, paddingVertical: 8, borderRadius: 6 },
   activeButton: { backgroundColor: '#ffc107' },
   activateButtonText: { color: 'white', fontSize: 14, fontWeight: 'bold' },
+  statusCard: { 
+    padding: 15, 
+    borderRadius: 8, 
+    marginBottom: 20, 
+    borderWidth: 1,
+  },
+  statusSuccess: { 
+    backgroundColor: 'rgba(40, 167, 69, 0.1)', 
+    borderColor: '#28a745' 
+  },
+  statusWarning: { 
+    backgroundColor: 'rgba(255, 193, 7, 0.1)', 
+    borderColor: '#ffc107' 
+  },
+  statusTitle: { 
+    color: 'white', 
+    fontSize: 16, 
+    fontWeight: 'bold' 
+  },
+  statusText: { 
+    color: '#ddd', 
+    fontSize: 14, 
+    marginTop: 5, 
+    lineHeight: 20 
+  },
 });

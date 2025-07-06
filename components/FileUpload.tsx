@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { uploadAudioFile } from '../app/lib/uploadService';
+import { uploadAudioFile } from '@/app/lib/uploadService';
 
 interface FileUploadProps {
   onFileSelect: (file: { url: string; name: string }) => void;
@@ -27,7 +27,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onFileSelect }) => {
       }
 
       onFileSelect({ 
-        url: result.url || URL.createObjectURL(file), 
+        url: result.publicUrl || result.url || URL.createObjectURL(file), 
         name: result.fileName || file.name 
       });
     } catch (error) {

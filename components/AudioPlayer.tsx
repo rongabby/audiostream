@@ -9,6 +9,8 @@ interface AudioPlayerProps {
   isVisitorMode?: boolean;
   playlistLength?: number;
   currentIndex?: number;
+  isPlaylistLooping?: boolean;
+  onTogglePlaylistLoop?: () => void;
 }
 
 const AudioPlayer: React.FC<AudioPlayerProps> = ({ 
@@ -18,7 +20,9 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   onPrevious,
   isVisitorMode,
   playlistLength,
-  currentIndex
+  currentIndex,
+  isPlaylistLooping = false,
+  onTogglePlaylistLoop
 }) => {
   // Set default values for optional props
   const _title = title ?? 'Audio Track';
@@ -29,7 +33,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
-  const [isLooping, setIsLooping] = useState(false);
+  const [isTrackLooping, setIsTrackLooping] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Memoize event handlers to avoid stale closures and unnecessary re-registrations
@@ -47,14 +51,16 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   }, []);
 
   const handleEnded = React.useCallback(() => {
-    if (!isLooping) {
-      setIsPlaying(false);
-      if (onNext) {
-        onNext();
-      }
+    if (isTrackLooping) {
+      // If track looping is enabled, the audio will continue automatically due to the loop attribute
+      return;
     }
-    // If looping, the audio will continue automatically
-  }, [isLooping, onNext]);
+    
+    setIsPlaying(false);
+    if (onNext) {
+      onNext();
+    }
+  }, [isTrackLooping, onNext]);
 
   const handleError = React.useCallback((e: any) => {
     console.error('Audio error:', e);
@@ -79,7 +85,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
 
     audio.crossOrigin = 'anonymous';
     audio.preload = 'metadata';
-    audio.loop = isLooping;
+    audio.loop = isTrackLooping;
     setIsPlaying(false);
     setCurrentTime(0);
     setDuration(0);
@@ -111,12 +117,12 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
   // Only reset player state when audioUrl changes, not when isLooping changes
   }, [audioUrl, handleLoadedMetadata, handleTimeUpdate, handleEnded, handleError, handleCanPlay]);
 
-  // Separate effect to update the loop property when isLooping changes
+  // Separate effect to update the loop property when isTrackLooping changes
   useEffect(() => {
     if (audioRef.current) {
-      audioRef.current.loop = isLooping;
+      audioRef.current.loop = isTrackLooping;
     }
-  }, [isLooping]);
+  }, [isTrackLooping]);
 
   const togglePlayPause = React.useCallback(async () => {
     if (!audioRef.current) return;
@@ -136,10 +142,10 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
       setIsLoading(false);
       window.alert('Playback Error: Unable to play audio. Please try again.');
     }
-  }, [isPlaying, setIsLoading, isLooping]);
+  }, [isPlaying, setIsLoading]);
 
-  const toggleLoop = () => {
-    setIsLooping(prev => {
+  const toggleTrackLoop = () => {
+    setIsTrackLooping(prev => {
       if (audioRef.current) {
         audioRef.current.loop = !prev;
       }
@@ -153,7 +159,7 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
       audioRef.current.currentTime = 0;
       setIsPlaying(false);
       setCurrentTime(0);
-      setIsLooping(false);
+      setIsTrackLooping(false);
       // Ensure the audio element's loop property is updated immediately
       audioRef.current.loop = false;
     }
@@ -205,11 +211,19 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
               <button onClick={onNext} style={{ background: 'none', border: 'none', color: 'white', fontSize: 16, cursor: 'pointer' }}>&gt;&gt;</button>
             )}
             <button 
-              onClick={toggleLoop} 
-              style={{ background: isLooping ? '#ff4757' : 'none', border: 'none', color: isLooping ? 'white' : '#aaa', fontSize: 16, cursor: 'pointer', borderRadius: 4, padding: '0 6px' }}
+              onClick={toggleTrackLoop} 
+              style={{ background: isTrackLooping ? '#ff4757' : 'none', border: 'none', color: isTrackLooping ? 'white' : '#aaa', fontSize: 16, cursor: 'pointer', borderRadius: 4, padding: '0 6px' }}
             >
-              &#128257;
+              🔂
             </button>
+            {onTogglePlaylistLoop && (
+              <button 
+                onClick={onTogglePlaylistLoop} 
+                style={{ background: isPlaylistLooping ? '#ff4757' : 'none', border: 'none', color: isPlaylistLooping ? 'white' : '#aaa', fontSize: 16, cursor: 'pointer', borderRadius: 4, padding: '0 6px' }}
+              >
+                🔁
+              </button>
+            )}
             <button onClick={resetPlayer} style={{ background: 'none', border: 'none', color: 'white', fontSize: 16, cursor: 'pointer' }}>■</button>
           </div>
           <div className="compact-progress-container" style={{ marginBottom: 0 }}>
@@ -238,20 +252,27 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
           )}
           <button 
             onClick={togglePlayPause} 
-            style={{ background: '#ff4757', border: 'none', borderRadius: '50%', width: 40, height: 40, color: 'white', fontSize: 22, cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }}
-            disabled={isLoading}
+            style={{ background: 'none', border: 'none', color: 'white', fontSize: 24, cursor: 'pointer' }}
           >
-            {isLoading ? '...' : (isPlaying ? '❚❚' : '►')}
+            {isPlaying ? '⏸' : '▶'}
           </button>
+          <button 
+            onClick={toggleTrackLoop} 
+            style={{ background: isTrackLooping ? '#ff4757' : 'transparent', border: 'none', color: isTrackLooping ? 'white' : '#aaa', fontSize: 18, cursor: 'pointer', borderRadius: 4, padding: '0 8px' }}
+          >
+            🔂
+          </button>
+          {onTogglePlaylistLoop && (
+            <button 
+              onClick={onTogglePlaylistLoop} 
+              style={{ background: isPlaylistLooping ? '#ff4757' : 'transparent', border: 'none', color: isPlaylistLooping ? 'white' : '#aaa', fontSize: 18, cursor: 'pointer', borderRadius: 4, padding: '0 8px' }}
+            >
+              🔁
+            </button>
+          )}
           {onNext && (
             <button onClick={onNext} style={{ background: 'none', border: 'none', color: 'white', fontSize: 18, cursor: 'pointer' }}>&gt;&gt;</button>
           )}
-          <button 
-            onClick={toggleLoop} 
-            style={{ background: isLooping ? '#ff4757' : 'transparent', border: 'none', color: isLooping ? 'white' : '#aaa', fontSize: 18, cursor: 'pointer', borderRadius: 4, padding: '0 8px' }}
-          >
-            &#128257;
-          </button>
           <button onClick={resetPlayer} style={{ background: 'none', border: 'none', color: 'white', fontSize: 18, cursor: 'pointer' }}>■</button>
         </div>
         <div className="progress-container" style={{ marginBottom: 0 }}>
