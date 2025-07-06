@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, ImageBackground, TouchableOpacity } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
 import AdminPanel from '../components/AdminPanel';
 import VisitorView from '../components/VisitorView';
 import AudioPlayer from '../components/AudioPlayer';
@@ -12,21 +13,9 @@ import DuplicateRemover from '../components/DuplicateRemover';
 import AppendToPlaylist from '../components/AppendToPlaylist';
 import FileEditor from '../components/FileEditor';
 import Notification from '../components/Notification';
+import PlaylistActivator from '../components/PlaylistActivator';
 import { isSupabaseConfigured } from './lib/supabase';
-
-interface AudioFile {
-  url: string;
-  name: string;
-  dateAdded: number;
-}
-
-interface Playlist {
-  id: string;
-  name: string;
-  description: string;
-  audio_files: AudioFile[];
-  is_active: boolean;
-}
+import { AudioFile, Playlist } from '@/types';
 
 export default function Index() {
   const [audioFiles, setAudioFiles] = useState<AudioFile[]>([]);
@@ -35,6 +24,8 @@ export default function Index() {
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [activePlaylist, setActivePlaylist] = useState<Playlist | null>(null);
   const [editingFile, setEditingFile] = useState<AudioFile | null>(null);
+  const [showUploadSection, setShowUploadSection] = useState(false);
+  const scrollViewRef = useRef<ScrollView>(null);
   
   // Notification state
   const [notification, setNotification] = useState<{
@@ -176,7 +167,11 @@ export default function Index() {
 
   const handleSortByDate = () => {
     setAudioFiles(prev => {
-      const sorted = [...prev].sort((a, b) => b.dateAdded - a.dateAdded);
+      const sorted = [...prev].sort((a, b) => {
+        const aDate = typeof a.dateAdded === 'number' ? a.dateAdded : 0;
+        const bDate = typeof b.dateAdded === 'number' ? b.dateAdded : 0;
+        return bDate - aDate;
+      });
       
       // Update current index after sort
       if (currentFile) {
@@ -199,9 +194,9 @@ export default function Index() {
         setCurrentIndex(newIndex >= 0 ? newIndex : 0);
       }
       
+      showNotification('Playlist order reversed', 'info');
       return reversed;
     });
-    showNotification('Playlist order reversed', 'info');
   };
 
   const handleRemoveDuplicates = (uniqueFiles: AudioFile[]) => {
@@ -217,6 +212,7 @@ export default function Index() {
 
   const handlePlaylistActivated = (playlist: Playlist) => {
     setActivePlaylist(playlist);
+    showNotification(`"${playlist.name}" activated`, 'success');
   };
 
   const handleFilesUpdated = (updatedFiles: AudioFile[]) => {
@@ -228,6 +224,18 @@ export default function Index() {
       const newIndex = updatedFiles.findIndex(f => f.url === currentFile.url);
       setCurrentIndex(newIndex >= 0 ? newIndex : 0);
     }
+  };
+
+  const scrollToUploadSection = () => {
+    setShowUploadSection(true);
+    // Scroll to upload section after state update
+    setTimeout(() => {
+      scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+    }, 100);
+    // Remove highlight after 3 seconds
+    setTimeout(() => {
+      setShowUploadSection(false);
+    }, 3000);
   };
 
   const handleAppendSuccess = () => {
@@ -275,7 +283,7 @@ export default function Index() {
           onHide={hideNotification}
         />
         
-        <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        <ScrollView style={styles.container} showsVerticalScrollIndicator={false} ref={scrollViewRef}>
           <View style={styles.header}>
             <Text style={styles.title}>🎵 Music Player</Text>
             <View style={styles.modeToggle}>
@@ -296,12 +304,36 @@ export default function Index() {
 
           {isAdminMode ? (
             <View>
+              {/* Quick Navigation */}
+              <View style={styles.quickNav}>
+                <TouchableOpacity 
+                  style={styles.quickNavButton}
+                  onPress={scrollToUploadSection}
+                >
+                  <Ionicons name="cloud-upload" size={20} color="white" />
+                  <Text style={styles.quickNavText}>Jump to Upload</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Playlist Activator */}
+              <PlaylistActivator 
+                onPlaylistActivated={handlePlaylistActivated}
+              />
+
               <AdminPanel 
                 audioFiles={audioFiles} 
                 onPlaylistActivated={handlePlaylistActivated}
                 onFilesUpdated={handleFilesUpdated}
               />
               
+              <View style={styles.adminSection}>
+                <Text style={styles.sectionTitle}>📁 File Upload Center</Text>
+                <View style={[styles.uploadSection, showUploadSection && styles.highlightedSection]}>
+                  <FileUpload onFileSelect={handleFileSelect} />
+                  <BulkUpload onFilesSelect={handleBulkFileSelect} />
+                </View>
+              </View>
+
               <View style={styles.adminSection}>
                 <Text style={styles.sectionTitle}>File Management</Text>
                 
@@ -344,7 +376,7 @@ export default function Index() {
                     />
                     <DuplicateRemover
                       audioFiles={audioFiles}
-                      onRemoveDuplicates={handleRemoveDuplicates}
+                      onFilesUpdated={handleRemoveDuplicates}
                     />
                     
                     {editingFile && (
@@ -374,7 +406,7 @@ export default function Index() {
               </View>
             </View>
           ) : (
-            <VisitorView />
+            <VisitorView uploadedFiles={audioFiles} />
           )}
         </ScrollView>
       </View>
@@ -401,4 +433,45 @@ const styles = StyleSheet.create({
   playlistSection: { marginTop: 20 },
   playlistTitle: { color: 'white', fontSize: 18, fontWeight: 'bold', marginBottom: 10 },
   uploadMore: { marginTop: 20, marginBottom: 20 },
+  quickNav: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 15,
+    paddingHorizontal: 20,
+  },
+  quickNavButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ff4757',
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 20,
+    shadowColor: '#ff4757',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  quickNavText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  uploadSection: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 10,
+    padding: 15,
+    marginTop: 10,
+  },
+  highlightedSection: {
+    backgroundColor: 'rgba(255, 71, 87, 0.1)',
+    borderWidth: 2,
+    borderColor: '#ff4757',
+    shadowColor: '#ff4757',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 5,
+  },
 });

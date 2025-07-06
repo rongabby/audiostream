@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { View, Button, Text, FlatList, ActivityIndicator } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
 import { DocumentPickerAsset, DocumentPickerResult } from 'expo-document-picker';
-import { supabase } from '../lib/supabase';
+import { supabase } from '@/app/lib/supabase';
 
 import * as FileSystem from 'expo-file-system';
 

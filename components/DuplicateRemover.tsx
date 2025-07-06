@@ -1,18 +1,13 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
-
-interface AudioFile {
-  url: string;
-  name: string;
-  dateAdded: number;
-}
+import { AudioFile } from '@/types';
 
 interface DuplicateRemoverProps {
   audioFiles: AudioFile[];
-  onRemoveDuplicates: (uniqueFiles: AudioFile[]) => void;
+  onFilesUpdated: (uniqueFiles: AudioFile[]) => void;
 }
 
-export default function DuplicateRemover({ audioFiles, onRemoveDuplicates }: DuplicateRemoverProps) {
+export default function DuplicateRemover({ audioFiles, onFilesUpdated }: DuplicateRemoverProps) {
   const [loading, setLoading] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
 
@@ -56,7 +51,7 @@ export default function DuplicateRemover({ audioFiles, onRemoveDuplicates }: Dup
               text: 'Remove',
               style: 'destructive',
               onPress: () => {
-                onRemoveDuplicates(unique);
+                onFilesUpdated(unique);
                 Alert.alert('Success', `Removed ${duplicates.length} duplicate files`);
               }
             }

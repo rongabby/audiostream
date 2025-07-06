@@ -3,22 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, ScrollView 
 import { supabase } from '@/app/lib/supabase';
 import ScrollToTopBottom from './ScrollToTopBottom';
 import DuplicateRemover from './DuplicateRemover';
-
-interface AudioFile {
-  url: string;
-  name: string;
-  dateAdded?: number | string;
-  [key: string]: any; // Allow additional fields for compatibility with Supabase JSON
-}
-
-interface Playlist {
-  id: string;
-  name: string;
-  description: string;
-  audio_files: AudioFile[];
-  is_active: boolean;
-  created_at?: string;
-}
+import CloudFileManager from './CloudFileManager';
+import { AudioFile, Playlist } from '@/types';
 
 interface AdminPanelProps {
   audioFiles: AudioFile[];
@@ -151,6 +137,11 @@ export default function AdminPanel({ audioFiles, onPlaylistActivated, onFilesUpd
             </Text>
           </TouchableOpacity>
         </View>
+
+        <CloudFileManager 
+          onFilesSelected={onFilesUpdated}
+          currentFiles={audioFiles}
+        />
 
         <DuplicateRemover audioFiles={audioFiles} onFilesUpdated={onFilesUpdated} />
 

@@ -1,12 +1,7 @@
 import { supabase, isSupabaseConfigured } from './supabase';
+import { UploadResult, CloudFile, DownloadResult } from '@/types';
 
-export interface UploadResult {
-  success: boolean;
-  url?: string;
-  publicUrl?: string;
-  error?: string;
-  fileName?: string;
-}
+export { UploadResult, CloudFile, DownloadResult };
 
 export async function uploadAudioFile(file: File): Promise<UploadResult> {
   try {
@@ -70,6 +65,73 @@ export async function uploadAudioFile(file: File): Promise<UploadResult> {
       publicUrl: URL.createObjectURL(file),
       fileName: file.name,
       error: `Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}. Using local file instead.`
+    };
+  }
+}
+
+export async function getCloudFiles(): Promise<DownloadResult> {
+  try {
+    // Check if Supabase is configured
+    if (!isSupabaseConfigured()) {
+      return {
+        success: false,
+        error: 'Supabase not configured. Cannot access cloud files.'
+      };
+    }
+
+    // List all files in the audio bucket
+    const { data, error } = await supabase.storage
+      .from('audio')
+      .list('', {
+        limit: 100,
+        offset: 0,
+        sortBy: { column: 'created_at', order: 'desc' }
+      });
+
+    if (error) {
+      console.error('Error listing cloud files:', error);
+      return {
+        success: false,
+        error: `Failed to fetch cloud files: ${error.message}`
+      };
+    }
+
+    if (!data || data.length === 0) {
+      return {
+        success: true,
+        files: []
+      };
+    }
+
+    // Get public URLs for all files
+    const cloudFiles: CloudFile[] = data
+      .filter((file: any) => file.name.toLowerCase().endsWith('.mp3') || file.name.toLowerCase().endsWith('.wav') || file.name.toLowerCase().endsWith('.m4a'))
+      .map((file: any) => {
+        const { data: publicUrlData } = supabase.storage
+          .from('audio')
+          .getPublicUrl(file.name);
+
+        return {
+          name: file.name,
+          id: file.id || file.name,
+          updated_at: file.updated_at || '',
+          created_at: file.created_at || '',
+          last_accessed_at: file.last_accessed_at || '',
+          size: file.metadata?.size || 0,
+          publicUrl: publicUrlData.publicUrl
+        };
+      });
+
+    return {
+      success: true,
+      files: cloudFiles
+    };
+
+  } catch (error) {
+    console.error('Unexpected error fetching cloud files:', error);
+    return {
+      success: false,
+      error: `Failed to fetch cloud files: ${error instanceof Error ? error.message : 'Unknown error'}`
     };
   }
 }

@@ -1,12 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
-interface AudioFile {
-  url: string;
-  name: string;
-  dateAdded: number;
-}
+import { AudioFile } from '@/types';
 
 interface FileEditorProps {
   file: AudioFile;

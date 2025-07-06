@@ -1,20 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Modal, FlatList } from 'react-native';
 import { supabase } from '@/app/lib/supabase';
-
-interface AudioFile {
-  url: string;
-  name: string;
-  dateAdded: number;
-}
-
-interface Playlist {
-  id: string;
-  name: string;
-  description: string;
-  audio_files: AudioFile[];
-  is_active: boolean;
-}
+import { AudioFile, Playlist } from '@/types';
 
 interface AppendToPlaylistProps {
   audioFiles: AudioFile[];

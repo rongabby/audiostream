@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, TextInput, Button, Text, StyleSheet } from 'react-native';
-import { supabase } from '../lib/supabase';
+import { supabase } from '@/app/lib/supabase';
 
 export default function SignInForm({ onSuccess }: { onSuccess?: () => void }) {
     const [email, setEmail] = useState('');

@@ -1,102 +1,124 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+
 
 interface AudioPlayerProps {
   audioUrl: string;
   title?: string;
   onNext?: () => void;
   onPrevious?: () => void;
+  isVisitorMode?: boolean;
+  playlistLength?: number;
+  currentIndex?: number;
 }
 
 const AudioPlayer: React.FC<AudioPlayerProps> = ({ 
   audioUrl, 
-  title = 'Audio Track', 
+  title, 
   onNext, 
-  onPrevious 
+  onPrevious,
+  isVisitorMode,
+  playlistLength,
+  currentIndex
 }) => {
+  // Set default values for optional props
+  const _title = title ?? 'Audio Track';
+  const _isVisitorMode = isVisitorMode ?? false;
+  const _playlistLength = playlistLength ?? 0;
+  const _currentIndex = currentIndex ?? 0;
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLooping, setIsLooping] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.removeEventListener('loadedmetadata', handleLoadedMetadata);
-        audioRef.current.removeEventListener('timeupdate', handleTimeUpdate);
-        audioRef.current.removeEventListener('ended', handleEnded);
-        audioRef.current.removeEventListener('error', handleError);
-        audioRef.current.removeEventListener('canplay', handleCanPlay);
-      }
-      
-      setIsLoading(true);
-      audioRef.current = new Audio();
-      const audio = audioRef.current;
-      
-      audio.crossOrigin = 'anonymous';
-      audio.preload = 'metadata';
-      
-      setIsPlaying(false);
-      setCurrentTime(0);
-      setDuration(0);
-
-      audio.addEventListener('loadedmetadata', handleLoadedMetadata);
-      audio.addEventListener('timeupdate', handleTimeUpdate);
-      audio.addEventListener('ended', handleEnded);
-      audio.addEventListener('error', handleError);
-      audio.addEventListener('canplay', handleCanPlay);
-      
-      audio.src = audioUrl;
-      audio.load();
-
-      return () => {
-        if (audio) {
-          audio.pause();
-          audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
-          audio.removeEventListener('timeupdate', handleTimeUpdate);
-          audio.removeEventListener('ended', handleEnded);
-          audio.removeEventListener('error', handleError);
-          audio.removeEventListener('canplay', handleCanPlay);
-        }
-      };
-    }
-  }, [audioUrl]);
-
-  const handleLoadedMetadata = () => {
+  // Memoize event handlers to avoid stale closures and unnecessary re-registrations
+  const handleLoadedMetadata = React.useCallback(() => {
     if (audioRef.current) {
       setDuration(audioRef.current.duration);
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const handleTimeUpdate = () => {
+  const handleTimeUpdate = React.useCallback(() => {
     if (audioRef.current) {
       setCurrentTime(audioRef.current.currentTime);
     }
-  };
+  }, []);
 
-  const handleEnded = () => {
-    setIsPlaying(false);
-    setCurrentTime(0);
-    if (onNext) {
-      onNext();
+  const handleEnded = React.useCallback(() => {
+    if (!isLooping) {
+      setIsPlaying(false);
+      if (onNext) {
+        onNext();
+      }
     }
-  };
+    // If looping, the audio will continue automatically
+  }, [isLooping, onNext]);
 
-  const handleError = (e: any) => {
+  const handleError = React.useCallback((e: any) => {
     console.error('Audio error:', e);
     setIsLoading(false);
-    Alert.alert('Playback Error', 'Unable to play this audio file. Please check the file format and try again.');
-  };
+    window.alert('Playback Error: Unable to play this audio file. Please check the file format and try again.');
+  }, []);
 
-  const handleCanPlay = () => {
+  const handleCanPlay = React.useCallback(() => {
     setIsLoading(false);
-  };
+  }, []);
 
-  const togglePlayPause = async () => {
+  // Animation values for visual effects (not used in web version)
+  // (Removed unused animation code for web compatibility)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    setIsLoading(true);
+
+    audio.crossOrigin = 'anonymous';
+    audio.preload = 'metadata';
+    audio.loop = isLooping;
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setDuration(0);
+
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('error', handleError);
+    audio.addEventListener('canplay', handleCanPlay);
+
+    audio.pause();
+    audio.currentTime = 0;
+
+    // Only call load if src is set
+    if (audio.src) {
+      audio.load();
+    }
+
+    return () => {
+      if (audio) {
+        audio.pause();
+        audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+        audio.removeEventListener('timeupdate', handleTimeUpdate);
+        audio.removeEventListener('ended', handleEnded);
+        audio.removeEventListener('error', handleError);
+        audio.removeEventListener('canplay', handleCanPlay);
+      }
+    };
+  // Only reset player state when audioUrl changes, not when isLooping changes
+  }, [audioUrl, handleLoadedMetadata, handleTimeUpdate, handleEnded, handleError, handleCanPlay]);
+
+  // Separate effect to update the loop property when isLooping changes
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.loop = isLooping;
+    }
+  }, [isLooping]);
+
+  const togglePlayPause = React.useCallback(async () => {
     if (!audioRef.current) return;
     
     try {
@@ -112,7 +134,28 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
     } catch (error) {
       console.error('Play error:', error);
       setIsLoading(false);
-      Alert.alert('Playback Error', 'Unable to play audio. Please try again.');
+      window.alert('Playback Error: Unable to play audio. Please try again.');
+    }
+  }, [isPlaying, setIsLoading, isLooping]);
+
+  const toggleLoop = () => {
+    setIsLooping(prev => {
+      if (audioRef.current) {
+        audioRef.current.loop = !prev;
+      }
+      return !prev;
+    });
+  };
+
+  const resetPlayer = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      setIsPlaying(false);
+      setCurrentTime(0);
+      setIsLooping(false);
+      // Ensure the audio element's loop property is updated immediately
+      audioRef.current.loop = false;
     }
   };
 
@@ -123,139 +166,106 @@ const AudioPlayer: React.FC<AudioPlayerProps> = ({
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
   };
 
+  // Calculate progress percentage for progress bar
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
-  return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.url} numberOfLines={1}>{audioUrl}</Text>
-      
-      <View style={styles.controls}>
-        {onPrevious && (
-          <TouchableOpacity onPress={onPrevious} style={styles.navButton}>
-            <Ionicons name="play-skip-back" size={24} color="white" />
-          </TouchableOpacity>
-        )}
-        
-        <TouchableOpacity 
-          onPress={togglePlayPause} 
-          style={[styles.playButton, isLoading && styles.loadingButton]}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <Text style={styles.loadingText}>...</Text>
-          ) : (
-            <Ionicons 
-              name={isPlaying ? 'pause' : 'play'} 
-              size={32} 
-              color="white" 
-            />
-          )}
-        </TouchableOpacity>
-        
-        {onNext && (
-          <TouchableOpacity onPress={onNext} style={styles.navButton}>
-            <Ionicons name="play-skip-forward" size={24} color="white" />
-          </TouchableOpacity>
-        )}
-      </View>
-      
-      <View style={styles.progressContainer}>
-        <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: `${progress}%` }]} />
-        </View>
-        <View style={styles.timeContainer}>
-          <Text style={styles.timeText}>{formatTime(currentTime)}</Text>
-          <Text style={styles.timeText}>{formatTime(duration)}</Text>
-        </View>
-      </View>
-    </View>
+  // Add a hidden audio element to the DOM for playback control
+  // This is required for React to manage the audio element lifecycle properly
+  // and to avoid creating new Audio objects outside the DOM tree.
+  const audioElement = (
+    <audio
+      key={audioUrl}
+      ref={audioRef}
+      src={audioUrl}
+      style={{ display: 'none' }}
+    />
   );
-};
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 15,
-    padding: 20,
-    margin: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  title: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 5,
-  },
-  url: {
-    color: '#888',
-    fontSize: 12,
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  controls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 20,
-  },
-  playButton: {
-    backgroundColor: '#ff4757',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#ff4757',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.5,
-    shadowRadius: 4,
-    elevation: 5,
-    marginHorizontal: 15,
-  },
-  loadingButton: {
-    backgroundColor: '#666',
-  },
-  loadingText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  navButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    width: 45,
-    height: 45,
-    borderRadius: 22.5,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  progressContainer: {
-    width: '100%',
-  },
-  progressBar: {
-    height: 4,
-    backgroundColor: '#333',
-    borderRadius: 2,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#ff4757',
-  },
-  timeContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 8,
-  },
-  timeText: {
-    color: '#888',
-    fontSize: 12,
-  },
-});
+  if (_isVisitorMode) {
+    return (
+      <>
+        {audioElement}
+        <div className="visitor-container" style={{ padding: 24, background: '#222', borderRadius: 12, color: 'white', maxWidth: 400, margin: '0 auto' }}>
+          <div className="visitor-title" style={{ fontWeight: 'bold', fontSize: 18, marginBottom: 4 }}>{_title}</div>
+          <div className="track-info" style={{ fontSize: 13, marginBottom: 12 }}>
+            Track {_currentIndex + 1} of {_playlistLength}
+          </div>
+          <div className="compact-controls" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: 12 }}>
+            {onPrevious && (
+              <button onClick={onPrevious} style={{ background: 'none', border: 'none', color: 'white', fontSize: 16, cursor: 'pointer' }}>&lt;&lt;</button>
+            )}
+            <button 
+              onClick={togglePlayPause} 
+              style={{ background: '#ff4757', border: 'none', borderRadius: '50%', width: 36, height: 36, color: 'white', fontSize: 20, cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }}
+              disabled={isLoading}
+            >
+              {isLoading ? '...' : (isPlaying ? '❚❚' : '►')}
+            </button>
+            {onNext && (
+              <button onClick={onNext} style={{ background: 'none', border: 'none', color: 'white', fontSize: 16, cursor: 'pointer' }}>&gt;&gt;</button>
+            )}
+            <button 
+              onClick={toggleLoop} 
+              style={{ background: isLooping ? '#ff4757' : 'none', border: 'none', color: isLooping ? 'white' : '#aaa', fontSize: 16, cursor: 'pointer', borderRadius: 4, padding: '0 6px' }}
+            >
+              &#128257;
+            </button>
+            <button onClick={resetPlayer} style={{ background: 'none', border: 'none', color: 'white', fontSize: 16, cursor: 'pointer' }}>■</button>
+          </div>
+          <div className="compact-progress-container" style={{ marginBottom: 0 }}>
+            <div className="compact-progress-bar" style={{ background: '#444', borderRadius: 4, height: 6, width: '100%', marginBottom: 4, overflow: 'hidden' }}>
+              <div className="progress-fill" style={{ background: '#ff4757', height: '100%', width: `${progress}%`, transition: 'width 0.2s' }} />
+            </div>
+            <div className="time-container" style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+              <span>{formatTime(currentTime)}</span>
+              <span>{formatTime(duration)}</span>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      {audioElement}
+      <div className="audio-player-container" style={{ padding: 24, background: '#222', borderRadius: 12, color: 'white', maxWidth: 500, margin: '0 auto' }}>
+        <div className="title" style={{ fontWeight: 'bold', fontSize: 20, marginBottom: 4 }}>{title}</div>
+        <div className="url" style={{ fontSize: 12, color: '#aaa', marginBottom: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{audioUrl}</div>
+        <div className="controls" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: 16 }}>
+          {onPrevious && (
+            <button onClick={onPrevious} style={{ background: 'none', border: 'none', color: 'white', fontSize: 18, cursor: 'pointer' }}>&lt;&lt;</button>
+          )}
+          <button 
+            onClick={togglePlayPause} 
+            style={{ background: '#ff4757', border: 'none', borderRadius: '50%', width: 40, height: 40, color: 'white', fontSize: 22, cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.6 : 1 }}
+            disabled={isLoading}
+          >
+            {isLoading ? '...' : (isPlaying ? '❚❚' : '►')}
+          </button>
+          {onNext && (
+            <button onClick={onNext} style={{ background: 'none', border: 'none', color: 'white', fontSize: 18, cursor: 'pointer' }}>&gt;&gt;</button>
+          )}
+          <button 
+            onClick={toggleLoop} 
+            style={{ background: isLooping ? '#ff4757' : 'transparent', border: 'none', color: isLooping ? 'white' : '#aaa', fontSize: 18, cursor: 'pointer', borderRadius: 4, padding: '0 8px' }}
+          >
+            &#128257;
+          </button>
+          <button onClick={resetPlayer} style={{ background: 'none', border: 'none', color: 'white', fontSize: 18, cursor: 'pointer' }}>■</button>
+        </div>
+        <div className="progress-container" style={{ marginBottom: 0 }}>
+          <div className="progress-bar" style={{ background: '#444', borderRadius: 4, height: 8, width: '100%', marginBottom: 4, overflow: 'hidden' }}>
+            <div className="progress-fill" style={{ background: '#ff4757', height: '100%', width: `${progress}%`, transition: 'width 0.2s' }} />
+          </div>
+          <div className="time-container" style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+            <span>{formatTime(currentTime)}</span>
+            <span>{formatTime(duration)}</span>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
 
 export default AudioPlayer;
