@@ -10,6 +10,8 @@ import PlaylistItem from '../components/PlaylistItem';
 import PlaylistControls from '../components/PlaylistControls';
 import DuplicateRemover from '../components/DuplicateRemover';
 import AppendToPlaylist from '../components/AppendToPlaylist';
+import Notification from '../components/Notification';
+import { isSupabaseConfigured } from './lib/supabase';
 
 interface AudioFile {
   url: string;
@@ -31,6 +33,21 @@ export default function Index() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [activePlaylist, setActivePlaylist] = useState<Playlist | null>(null);
+  
+  // Notification state
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: 'success' | 'warning' | 'error' | 'info';
+    visible: boolean;
+  }>({ message: '', type: 'info', visible: false });
+
+  const showNotification = (message: string, type: 'success' | 'warning' | 'error' | 'info' = 'info') => {
+    setNotification({ message, type, visible: true });
+  };
+
+  const hideNotification = () => {
+    setNotification(prev => ({ ...prev, visible: false }));
+  };
 
   const handleFileSelect = (file: { url: string; name: string }) => {
     const newFile = { ...file, dateAdded: Date.now() };
@@ -42,6 +59,13 @@ export default function Index() {
       }
       return updated;
     });
+
+    // Show notification based on Supabase configuration
+    if (isSupabaseConfigured()) {
+      showNotification(`"${file.name}" uploaded to cloud storage`, 'success');
+    } else {
+      showNotification(`"${file.name}" loaded locally (cloud storage not configured)`, 'warning');
+    }
   };
 
   const handleBulkFileSelect = (files: { url: string; name: string }[]) => {
@@ -54,6 +78,14 @@ export default function Index() {
       }
       return updated;
     });
+
+    // Show notification for bulk upload
+    const fileCount = files.length;
+    if (isSupabaseConfigured()) {
+      showNotification(`${fileCount} file${fileCount > 1 ? 's' : ''} uploaded to cloud storage`, 'success');
+    } else {
+      showNotification(`${fileCount} file${fileCount > 1 ? 's' : ''} loaded locally (cloud storage not configured)`, 'warning');
+    }
   };
 
   const handleFileRemove = (index: number) => {
@@ -190,6 +222,15 @@ export default function Index() {
     >
       <View style={styles.overlay}>
         <StatusBar style="light" />
+        
+        {/* Notification Component */}
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          visible={notification.visible}
+          onHide={hideNotification}
+        />
+        
         <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
             <Text style={styles.title}>🎵 Music Player</Text>

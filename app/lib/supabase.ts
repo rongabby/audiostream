@@ -18,12 +18,18 @@ const supabaseKey =
     process.env.NEXT_PUBLIC_SUPABASE_KEY ||
     (typeof window !== 'undefined' && (window as any).SUPABASE_CONFIG?.key);
 
+// Helper function to check if Supabase is properly configured
+const isSupabaseConfigured = (): boolean => {
+  return !!(supabaseUrl && supabaseKey);
+};
+
 // Create a mock client if environment variables are missing (for development/demo)
 let supabase: any;
 
 if (!supabaseUrl || !supabaseKey) {
   console.warn('⚠️ Supabase credentials not configured. Using mock client.');
   console.warn('Please set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY environment variables.');
+  console.warn('The app will work with local file storage only.');
   
   // Create a mock Supabase client that doesn't break the app
   const createMockQuery = () => ({
@@ -68,4 +74,4 @@ if (!supabaseUrl || !supabaseKey) {
 }
 
 
-export { supabase };
+export { supabase, isSupabaseConfigured };
