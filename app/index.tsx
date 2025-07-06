@@ -10,6 +10,7 @@ import PlaylistItem from '../components/PlaylistItem';
 import PlaylistControls from '../components/PlaylistControls';
 import DuplicateRemover from '../components/DuplicateRemover';
 import AppendToPlaylist from '../components/AppendToPlaylist';
+import FileEditor from '../components/FileEditor';
 import Notification from '../components/Notification';
 import { isSupabaseConfigured } from './lib/supabase';
 
@@ -33,6 +34,7 @@ export default function Index() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAdminMode, setIsAdminMode] = useState(false);
   const [activePlaylist, setActivePlaylist] = useState<Playlist | null>(null);
+  const [editingFile, setEditingFile] = useState<AudioFile | null>(null);
   
   // Notification state
   const [notification, setNotification] = useState<{
@@ -154,6 +156,7 @@ export default function Index() {
       
       return shuffled;
     });
+    showNotification('Playlist shuffled randomly', 'info');
   };
 
   const handleSortByName = () => {
@@ -168,6 +171,7 @@ export default function Index() {
       
       return sorted;
     });
+    showNotification('Files sorted alphabetically', 'info');
   };
 
   const handleSortByDate = () => {
@@ -182,6 +186,22 @@ export default function Index() {
       
       return sorted;
     });
+    showNotification('Files sorted by date (newest first)', 'info');
+  };
+
+  const handleReverseOrder = () => {
+    setAudioFiles(prev => {
+      const reversed = [...prev].reverse();
+      
+      // Update current index after reverse
+      if (currentFile) {
+        const newIndex = reversed.findIndex(f => f.url === currentFile.url);
+        setCurrentIndex(newIndex >= 0 ? newIndex : 0);
+      }
+      
+      return reversed;
+    });
+    showNotification('Playlist order reversed', 'info');
   };
 
   const handleRemoveDuplicates = (uniqueFiles: AudioFile[]) => {
@@ -212,6 +232,30 @@ export default function Index() {
 
   const handleAppendSuccess = () => {
     console.log('Files successfully appended to playlist');
+  };
+
+  const handleEditFile = (file: AudioFile) => {
+    setEditingFile(file);
+  };
+
+  const handleSaveFileEdit = (updatedFile: AudioFile) => {
+    setAudioFiles(prev => 
+      prev.map(file => 
+        file.url === updatedFile.url ? updatedFile : file
+      )
+    );
+    
+    // Update current file if it's the one being edited
+    if (currentFile?.url === updatedFile.url) {
+      setCurrentFile(updatedFile);
+    }
+    
+    setEditingFile(null);
+    showNotification(`File renamed to "${updatedFile.name}"`, 'success');
+  };
+
+  const handleCancelFileEdit = () => {
+    setEditingFile(null);
   };
 
   return (
@@ -295,8 +339,22 @@ export default function Index() {
                       onShuffle={handleShuffle}
                       onSortByName={handleSortByName}
                       onSortByDate={handleSortByDate}
+                      onReverseOrder={handleReverseOrder}
                       totalFiles={audioFiles.length}
                     />
+                    <DuplicateRemover
+                      audioFiles={audioFiles}
+                      onRemoveDuplicates={handleRemoveDuplicates}
+                    />
+                    
+                    {editingFile && (
+                      <FileEditor
+                        file={editingFile}
+                        onSave={handleSaveFileEdit}
+                        onCancel={handleCancelFileEdit}
+                      />
+                    )}
+                    
                     <Text style={styles.playlistTitle}>Current Files ({audioFiles.length})</Text>
                     {audioFiles.map((file, index) => (
                       <PlaylistItem
@@ -305,6 +363,7 @@ export default function Index() {
                         isActive={currentFile?.url === file.url}
                         onSelect={() => handlePlaylistItemSelect(file)}
                         onRemove={() => handleFileRemove(index)}
+                        onEdit={() => handleEditFile(file)}
                       />
                     ))}
                     <View style={styles.uploadMore}>

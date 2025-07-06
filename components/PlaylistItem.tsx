@@ -7,9 +7,10 @@ interface PlaylistItemProps {
   isActive: boolean;
   onSelect: () => void;
   onRemove: () => void;
+  onEdit?: () => void;
 }
 
-const PlaylistItem: React.FC<PlaylistItemProps> = ({ file, isActive, onSelect, onRemove }) => {
+const PlaylistItem: React.FC<PlaylistItemProps> = ({ file, isActive, onSelect, onRemove, onEdit }) => {
   return (
     <TouchableOpacity 
       onPress={onSelect}
@@ -25,9 +26,16 @@ const PlaylistItem: React.FC<PlaylistItemProps> = ({ file, isActive, onSelect, o
           {file.name.replace('.mp3', '')}
         </Text>
       </View>
-      <TouchableOpacity onPress={onRemove} style={styles.removeButton}>
-        <Ionicons name="close" size={20} color="#888" />
-      </TouchableOpacity>
+      <View style={styles.actions}>
+        {onEdit && (
+          <TouchableOpacity onPress={onEdit} style={styles.actionButton}>
+            <Ionicons name="create-outline" size={18} color="#888" />
+          </TouchableOpacity>
+        )}
+        <TouchableOpacity onPress={onRemove} style={styles.actionButton}>
+          <Ionicons name="close" size={18} color="#888" />
+        </TouchableOpacity>
+      </View>
     </TouchableOpacity>
   );
 };
@@ -62,6 +70,14 @@ const styles = StyleSheet.create({
   activeName: {
     color: '#ff4757',
     fontWeight: 'bold',
+  },
+  actions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  actionButton: {
+    padding: 8,
+    marginLeft: 5,
   },
   removeButton: {
     padding: 5,

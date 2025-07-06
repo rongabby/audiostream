@@ -6,6 +6,7 @@ interface PlaylistControlsProps {
   onShuffle: () => void;
   onSortByName: () => void;
   onSortByDate: () => void;
+  onReverseOrder: () => void;
   totalFiles: number;
 }
 
@@ -13,29 +14,36 @@ const PlaylistControls: React.FC<PlaylistControlsProps> = ({
   onShuffle,
   onSortByName,
   onSortByDate,
+  onReverseOrder,
   totalFiles
 }) => {
   if (totalFiles === 0) return null;
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Playlist Controls</Text>
+      <Text style={styles.title}>🎛️ Playlist Controls</Text>
       <View style={styles.controls}>
         <TouchableOpacity style={styles.button} onPress={onShuffle}>
-          <Ionicons name="shuffle" size={20} color="white" />
+          <Ionicons name="shuffle" size={18} color="white" />
           <Text style={styles.buttonText}>Shuffle</Text>
         </TouchableOpacity>
         
         <TouchableOpacity style={styles.button} onPress={onSortByName}>
-          <Ionicons name="text" size={20} color="white" />
-          <Text style={styles.buttonText}>Sort A-Z</Text>
+          <Ionicons name="text" size={18} color="white" />
+          <Text style={styles.buttonText}>A-Z</Text>
         </TouchableOpacity>
         
         <TouchableOpacity style={styles.button} onPress={onSortByDate}>
-          <Ionicons name="time" size={20} color="white" />
-          <Text style={styles.buttonText}>Sort by Date</Text>
+          <Ionicons name="time" size={18} color="white" />
+          <Text style={styles.buttonText}>Date</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.button} onPress={onReverseOrder}>
+          <Ionicons name="swap-vertical" size={18} color="white" />
+          <Text style={styles.buttonText}>Reverse</Text>
         </TouchableOpacity>
       </View>
+      <Text style={styles.info}>Total: {totalFiles} files</Text>
     </View>
   );
 };
@@ -57,21 +65,30 @@ const styles = StyleSheet.create({
   controls: {
     flexDirection: 'row',
     justifyContent: 'space-around',
+    flexWrap: 'wrap',
+    gap: 8,
   },
   button: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#444',
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: 6,
-    minWidth: 80,
+    minWidth: 70,
+    justifyContent: 'center',
   },
   buttonText: {
     color: 'white',
-    fontSize: 12,
+    fontSize: 11,
     marginLeft: 4,
     fontWeight: '500',
+  },
+  info: {
+    color: '#888',
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 8,
   },
 });
 
